@@ -2,7 +2,7 @@
 
 A VS Code extension that displays all TypeScript and ESLint diagnostics across your entire project in a convenient sidebar view.
 
-![LintMon in Action](resources/sample.png)
+![LintMon in Action](https://raw.githubusercontent.com/Flo0806/lintmon/main/resources/sample.png)
 
 ## Features
 
