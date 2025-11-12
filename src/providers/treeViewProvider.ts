@@ -13,7 +13,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   private currentIndex = 0;
   private flatDiagnosticsList: DiagnosticItem[] = [];
   private isRefreshing = false;
-  private refreshTimeout?: NodeJS.Timeout;
+  private refreshTimeout?: ReturnType<typeof setTimeout>;
   private pendingRefresh = false; // Flag: refresh requested during scan
 
   constructor(

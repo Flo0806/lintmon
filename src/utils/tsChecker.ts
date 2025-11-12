@@ -54,11 +54,20 @@ export class TypeScriptChecker {
       }
 
       // Parse tsconfig
+      const basePath = path.dirname(tsConfigPath);
       const parsedConfig = ts.parseJsonConfigFileContent(
         configFile.config,
         ts.sys,
-        path.dirname(tsConfigPath)
+        basePath
       );
+
+      // Fix: If types are specified but typeRoots is not, TypeScript might not find them
+      // when loaded dynamically. Explicitly set typeRoots to include node_modules/@types
+      if (!parsedConfig.options.typeRoots) {
+        parsedConfig.options.typeRoots = [
+          path.join(basePath, 'node_modules/@types')
+        ];
+      }
 
       if (parsedConfig.errors.length > 0) {
         console.error('LintMon: Error parsing tsconfig:', parsedConfig.errors);
@@ -70,6 +79,7 @@ export class TypeScriptChecker {
         rootNames: parsedConfig.fileNames,
         options: parsedConfig.options,
       });
+
 
       // Get diagnostics for all files
       const allDiagnostics = [
