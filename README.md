@@ -2,6 +2,8 @@
 
 A VS Code extension that displays all TypeScript and ESLint diagnostics across your entire project in a convenient sidebar view.
 
+![LintMon in Action](resources/sample.png)
+
 ## Features
 
 - **Complete Project Overview**: See all diagnostics from your entire project, not just open files
@@ -55,12 +57,7 @@ See VS Code Settings (Preferences > Settings > Extensions > LintMon) for all ava
 ## Requirements
 
 - VS Code 1.85.0 or higher
-- Node.js 22.0.0 or higher
 - TypeScript and/or ESLint configured in your project
-
-## Development
-
-See CLAUDE.md for development documentation.
 
 ## License
 

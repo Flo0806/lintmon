@@ -1,24 +1,49 @@
 import * as vscode from 'vscode';
-import * as ts from 'typescript';
 import * as path from 'path';
+
+// Dynamically load TypeScript from the workspace
+let ts: typeof import('typescript');
+
+function loadTypeScript(workspaceRoot: string): typeof import('typescript') {
+  if (ts) {
+    return ts;
+  }
+
+  try {
+    // Try to load from workspace node_modules
+    const tsPath = path.join(workspaceRoot, 'node_modules', 'typescript');
+    ts = require(tsPath);
+    return ts;
+  } catch (err) {
+    // Fallback: try global typescript
+    try {
+      ts = require('typescript');
+      return ts;
+    } catch {
+      throw new Error('TypeScript not found. Please install TypeScript in your workspace: npm install typescript');
+    }
+  }
+}
 
 /**
  * TypeScript checker that scans all files in the project
  * (not just open files like VS Code's default diagnostics)
  */
 export class TypeScriptChecker {
-  private program?: ts.Program;
+  private program?: import('typescript').Program;
   private workspaceRoot: string;
 
   constructor(workspaceRoot: vscode.Uri) {
     this.workspaceRoot = workspaceRoot.fsPath;
+    // Load TypeScript from workspace
+    ts = loadTypeScript(this.workspaceRoot);
   }
 
   /**
    * Get all TypeScript diagnostics from the entire project
    */
-  async getAllDiagnostics(tsConfigPath: string): Promise<Map<string, ts.Diagnostic[]>> {
-    const diagnosticsMap = new Map<string, ts.Diagnostic[]>();
+  async getAllDiagnostics(tsConfigPath: string): Promise<Map<string, import('typescript').Diagnostic[]>> {
+    const diagnosticsMap = new Map<string, import('typescript').Diagnostic[]>();
 
     try {
       // Load tsconfig.json
@@ -84,7 +109,7 @@ export class TypeScriptChecker {
   /**
    * Convert TypeScript diagnostic to VS Code diagnostic
    */
-  convertDiagnostic(tsDiag: ts.Diagnostic): vscode.Diagnostic | undefined {
+  convertDiagnostic(tsDiag: import('typescript').Diagnostic): vscode.Diagnostic | undefined {
     // Check if diagnostic has file and position info
     const file = tsDiag.file;
     if (!file) {
