@@ -3,7 +3,7 @@
   "displayName": "LintMon - Project Diagnostics Viewer",
   "description": "View all TypeScript and ESLint diagnostics across your entire project in a convenient sidebar",
   "version": "0.0.1",
-  "publisher": "lintmon",
+  "publisher": "fh-softdev",
   "icon": "resources/lm-logo.png",
   "license": "MIT",
   "repository": {
