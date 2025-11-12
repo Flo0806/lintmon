@@ -25,6 +25,10 @@ export function activate(context: vscode.ExtensionContext): void {
     treeProvider.refreshImmediate(); // Manual refresh = immediate, no debounce
   });
 
+  const togglePauseCommand = vscode.commands.registerCommand('lintmon.togglePause', () => {
+    treeProvider.togglePause();
+  });
+
   const nextDiagnosticCommand = vscode.commands.registerCommand('lintmon.nextDiagnostic', () => {
     treeProvider.navigateToNext();
   });
@@ -56,6 +60,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     treeView,
     refreshCommand,
+    togglePauseCommand,
     nextDiagnosticCommand,
     previousDiagnosticCommand,
     quickFixCommand,

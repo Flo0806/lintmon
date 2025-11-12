@@ -15,6 +15,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   private isRefreshing = false;
   private refreshTimeout?: NodeJS.Timeout;
   private pendingRefresh = false; // Flag: refresh requested during scan
+  private isPaused = false; // Flag: scanning is paused
 
   constructor(
     private context: vscode.ExtensionContext,
@@ -34,6 +35,11 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
    * Refresh the tree view (debounced)
    */
   refresh(): void {
+    // Don't refresh if paused
+    if (this.isPaused) {
+      return;
+    }
+
     // If already refreshing, mark as pending and return
     if (this.isRefreshing) {
       this.pendingRefresh = true;
@@ -56,6 +62,11 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
    * Force immediate refresh (for manual refresh button)
    */
   refreshImmediate(): void {
+    // Don't refresh if paused
+    if (this.isPaused) {
+      return;
+    }
+
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
     }
@@ -67,6 +78,42 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
     }
 
     this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Toggle pause/resume scanning
+   */
+  togglePause(): void {
+    this.isPaused = !this.isPaused;
+
+    if (this.isPaused) {
+      // Paused - show message
+      if (this.treeView) {
+        this.treeView.message = '$(debug-pause) Scanning paused';
+        this.treeView.badge = {
+          tooltip: 'Scanning paused',
+          value: 0,
+        };
+      }
+      vscode.window.showInformationMessage('LintMon: Scanning paused');
+    } else {
+      // Resumed - clear message and refresh
+      if (this.treeView) {
+        this.treeView.message = undefined;
+      }
+      vscode.window.showInformationMessage('LintMon: Scanning resumed');
+      this.refreshImmediate();
+    }
+
+    // Update command icon
+    vscode.commands.executeCommand('setContext', 'lintmon.isPaused', this.isPaused);
+  }
+
+  /**
+   * Check if scanning is paused
+   */
+  isPausedState(): boolean {
+    return this.isPaused;
   }
 
   /**
@@ -222,6 +269,11 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
     if (element) {
       // Return children of the element
       return element.children || [];
+    }
+
+    // If paused, return empty or show paused message
+    if (this.isPaused) {
+      return [];
     }
 
     // Root level - get all diagnostics

@@ -56,6 +56,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "lintmon.togglePause",
+        "title": "Pause/Resume Scanning",
+        "icon": "$(debug-pause)"
+      },
+      {
         "command": "lintmon.nextDiagnostic",
         "title": "Go to Next Diagnostic"
       },
@@ -69,6 +74,20 @@
         "icon": "$(lightbulb)"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "lintmon.refresh",
+          "when": "view == lintmon.diagnosticsView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "lintmon.togglePause",
+          "when": "view == lintmon.diagnosticsView",
+          "group": "navigation@2"
+        }
+      ]
+    },
     "keybindings": [
       {
         "command": "lintmon.nextDiagnostic",
