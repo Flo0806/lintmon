@@ -22,10 +22,12 @@ export class TypeScriptChecker {
     const diagnosticsMap = new Map<string, ts.Diagnostic[]>();
 
     try {
+      console.log(`LintMon: Loading tsconfig from ${tsConfigPath}`);
+
       // Load tsconfig.json
       const configFile = ts.readConfigFile(tsConfigPath, ts.sys.readFile);
       if (configFile.error) {
-        console.error('Error reading tsconfig:', configFile.error.messageText);
+        console.error('LintMon: Error reading tsconfig:', configFile.error.messageText);
         return diagnosticsMap;
       }
 
@@ -37,15 +39,20 @@ export class TypeScriptChecker {
       );
 
       if (parsedConfig.errors.length > 0) {
-        console.error('Error parsing tsconfig:', parsedConfig.errors);
+        console.error('LintMon: Error parsing tsconfig:', parsedConfig.errors);
         return diagnosticsMap;
       }
+
+      console.log(`LintMon: Found ${parsedConfig.fileNames.length} files in tsconfig`);
+      console.log('LintMon: Sample files:', parsedConfig.fileNames.slice(0, 5));
 
       // Create TypeScript program
       this.program = ts.createProgram({
         rootNames: parsedConfig.fileNames,
         options: parsedConfig.options,
       });
+
+      console.log(`LintMon: Created TS program with ${this.program.getSourceFiles().length} source files`);
 
       // Get diagnostics for all files
       const allDiagnostics = [
@@ -54,11 +61,17 @@ export class TypeScriptChecker {
       ];
 
       // Get diagnostics for each source file
+      let checkedFiles = 0;
+      let skippedFiles = 0;
+
       for (const sourceFile of this.program.getSourceFiles()) {
         // Skip declaration files and node_modules
         if (sourceFile.isDeclarationFile || sourceFile.fileName.includes('node_modules')) {
+          skippedFiles++;
           continue;
         }
+
+        checkedFiles++;
 
         const fileDiagnostics = [
           ...this.program.getSyntacticDiagnostics(sourceFile),
@@ -66,9 +79,12 @@ export class TypeScriptChecker {
         ];
 
         if (fileDiagnostics.length > 0) {
+          console.log(`LintMon: Found ${fileDiagnostics.length} diagnostics in ${sourceFile.fileName}`);
           diagnosticsMap.set(sourceFile.fileName, fileDiagnostics);
         }
       }
+
+      console.log(`LintMon: Checked ${checkedFiles} files, skipped ${skippedFiles} files`);
 
       // Add global diagnostics to a special entry
       if (allDiagnostics.length > 0) {
@@ -86,14 +102,21 @@ export class TypeScriptChecker {
    * Convert TypeScript diagnostic to VS Code diagnostic
    */
   convertDiagnostic(tsDiag: ts.Diagnostic, sourceFile?: ts.SourceFile): vscode.Diagnostic | undefined {
-    if (!tsDiag.file || !tsDiag.start) {
+    // Check if diagnostic has file and position info
+    const file = tsDiag.file || sourceFile;
+    if (!file) {
+      console.warn('TS diagnostic without file:', ts.flattenDiagnosticMessageText(tsDiag.messageText, '\n'));
       return undefined;
     }
 
-    const start = tsDiag.file.getLineAndCharacterOfPosition(tsDiag.start);
-    const end = tsDiag.file.getLineAndCharacterOfPosition(
-      tsDiag.start + (tsDiag.length || 0)
-    );
+    // Use start position or fallback to beginning of file
+    const start = tsDiag.start !== undefined
+      ? file.getLineAndCharacterOfPosition(tsDiag.start)
+      : { line: 0, character: 0 };
+
+    const end = tsDiag.start !== undefined && tsDiag.length !== undefined
+      ? file.getLineAndCharacterOfPosition(tsDiag.start + tsDiag.length)
+      : { line: 0, character: 0 };
 
     const range = new vscode.Range(
       new vscode.Position(start.line, start.character),

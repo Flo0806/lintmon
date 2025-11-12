@@ -45,7 +45,9 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
       clearTimeout(this.refreshTimeout);
     }
 
-    this.refreshTimeout = setTimeout(() => {
+    this.refreshTimeout = setTimeout(async () => {
+      // Also scan and update badge in background, even if view not visible
+      await this.refreshBadgeInBackground();
       this._onDidChangeTreeData.fire(undefined);
     }, 500); // 500ms debounce
   }
@@ -86,6 +88,48 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
       };
     } else {
       this.treeView.badge = undefined;
+    }
+  }
+
+  /**
+   * Show scanning state in badge (no number, just tooltip)
+   */
+  private showScanningBadge(): void {
+    if (!this.treeView) {
+      return;
+    }
+
+    // Show empty badge with "Scanning..." tooltip
+    // Badge will be updated with actual count after scan
+    this.treeView.badge = {
+      tooltip: 'Scanning project...',
+      value: 0, // 0 makes badge invisible but keeps tooltip
+    };
+  }
+
+  /**
+   * Refresh badge in background (even if view not visible)
+   * This ensures badge updates when user is in another tab
+   */
+  private async refreshBadgeInBackground(): Promise<void> {
+    if (!this.treeView || this.isRefreshing) {
+      return;
+    }
+
+    try {
+      // Show scanning state
+      this.showScanningBadge();
+
+      // Quick scan just for error count
+      const diagnosticItems = await this.diagnosticsProvider.getDiagnostics();
+      this.flatDiagnosticsList = this.flattenDiagnostics(diagnosticItems);
+      this.updateBadge();
+    } catch (error) {
+      console.error('Error updating badge:', error);
+      // Clear scanning badge on error
+      if (this.treeView) {
+        this.treeView.badge = undefined;
+      }
     }
   }
 
@@ -186,6 +230,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
 
     // Show loading state
     this.isRefreshing = true;
+    this.showScanningBadge(); // Show scanning badge
     if (this.treeView) {
       this.treeView.message = '$(sync~spin) Scanning project...';
     }

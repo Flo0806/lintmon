@@ -35,6 +35,13 @@ export class ConfigDetector {
       }
     }
 
+    // For Nuxt: Check .nuxt/tsconfig.json first (generated, has all files)
+    const nuxtTsConfig = path.join(this.workspaceRoot.fsPath, '.nuxt', 'tsconfig.json');
+    if (await this.fileExists(nuxtTsConfig)) {
+      console.log('LintMon: Using Nuxt generated tsconfig');
+      return nuxtTsConfig;
+    }
+
     // Auto-detect in common locations
     const commonPaths = [
       'tsconfig.json',

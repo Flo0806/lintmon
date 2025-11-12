@@ -52,11 +52,6 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  // Watch for diagnostics changes
-  const diagnosticsWatcher = vscode.languages.onDidChangeDiagnostics(() => {
-    treeProvider.refresh();
-  });
-
   // Add to subscriptions for cleanup
   context.subscriptions.push(
     treeView,
@@ -65,12 +60,15 @@ export function activate(context: vscode.ExtensionContext): void {
     previousDiagnosticCommand,
     quickFixCommand,
     configWatcher,
-    fileSaveWatcher,
-    diagnosticsWatcher
+    fileSaveWatcher
   );
 
-  // Initial refresh
-  treeProvider.refresh();
+  // Initial refresh - delay to ensure workspace is ready
+  setTimeout(() => {
+    if (vscode.workspace.workspaceFolders) {
+      treeProvider.refresh();
+    }
+  }, 2000); // 2 second delay for workspace to be ready
 }
 
 /**
