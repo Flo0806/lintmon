@@ -6,6 +6,27 @@ import { exec as execCallback } from 'child_process';
 const exec = promisify(execCallback);
 
 /**
+ * ESLint message from JSON output
+ */
+interface ESLintMessage {
+  line?: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
+  severity: number;
+  message: string;
+  ruleId?: string;
+}
+
+/**
+ * ESLint result from JSON output
+ */
+interface ESLintResult {
+  filePath: string;
+  messages: ESLintMessage[];
+}
+
+/**
  * ESLint checker that scans all files in the project
  */
 export class ESLintChecker {
@@ -37,57 +58,20 @@ export class ESLintChecker {
       });
 
       // Parse ESLint JSON output
-      const results = JSON.parse(stdout);
+      const results = JSON.parse(stdout) as ESLintResult[];
+      this.parseESLintResults(results, diagnosticsMap);
 
-      for (const result of results) {
-        if (result.messages.length === 0) {
-          continue;
-        }
-
-        const filePath = result.filePath;
-        const diagnostics: vscode.Diagnostic[] = [];
-
-        for (const message of result.messages) {
-          const diagnostic = this.convertMessage(message);
-          if (diagnostic) {
-            diagnostics.push(diagnostic);
-          }
-        }
-
-        if (diagnostics.length > 0) {
-          diagnosticsMap.set(filePath, diagnostics);
-        }
-      }
-
-    } catch (error: any) {
+    } catch (error: unknown) {
       // ESLint returns exit code 1 when there are linting errors
       // but still outputs valid JSON
-      if (error.stdout) {
+      if (this.isExecError(error) && error.stdout) {
         try {
-          const results = JSON.parse(error.stdout);
-          for (const result of results) {
-            if (result.messages.length === 0) {
-              continue;
-            }
-
-            const filePath = result.filePath;
-            const diagnostics: vscode.Diagnostic[] = [];
-
-            for (const message of result.messages) {
-              const diagnostic = this.convertMessage(message);
-              if (diagnostic) {
-                diagnostics.push(diagnostic);
-              }
-            }
-
-            if (diagnostics.length > 0) {
-              diagnosticsMap.set(filePath, diagnostics);
-            }
-          }
+          const results = JSON.parse(error.stdout) as ESLintResult[];
+          this.parseESLintResults(results, diagnosticsMap);
         } catch (parseError) {
           console.error('Error parsing ESLint output:', parseError);
         }
-      } else {
+      } else if (error instanceof Error) {
         console.error('Error running ESLint:', error.message);
       }
     }
@@ -96,9 +80,41 @@ export class ESLintChecker {
   }
 
   /**
+   * Parse ESLint results and add diagnostics to map
+   */
+  private parseESLintResults(results: ESLintResult[], diagnosticsMap: Map<string, vscode.Diagnostic[]>): void {
+    for (const result of results) {
+      if (result.messages.length === 0) {
+        continue;
+      }
+
+      const filePath = result.filePath;
+      const diagnostics: vscode.Diagnostic[] = [];
+
+      for (const message of result.messages) {
+        const diagnostic = this.convertMessage(message);
+        if (diagnostic) {
+          diagnostics.push(diagnostic);
+        }
+      }
+
+      if (diagnostics.length > 0) {
+        diagnosticsMap.set(filePath, diagnostics);
+      }
+    }
+  }
+
+  /**
+   * Type guard to check if error is an exec error with stdout
+   */
+  private isExecError(error: unknown): error is { stdout: string } {
+    return typeof error === 'object' && error !== null && 'stdout' in error;
+  }
+
+  /**
    * Convert ESLint message to VS Code diagnostic
    */
-  private convertMessage(message: any): vscode.Diagnostic | undefined {
+  private convertMessage(message: ESLintMessage): vscode.Diagnostic | undefined {
     const line = (message.line || 1) - 1;
     const column = (message.column || 1) - 1;
     const endLine = (message.endLine || message.line || 1) - 1;
@@ -141,7 +157,11 @@ export class ESLintChecker {
     // Use local ESLint from node_modules
     const eslintPath = path.join(this.workspaceRoot, 'node_modules', '.bin', 'eslint');
 
-    return `"${eslintPath}" . --ext ${extensions} --format json --max-warnings=-1`;
+    // Properly quote paths for cross-platform compatibility (Windows)
+    const quotedEslintPath = `"${eslintPath}"`;
+    const quotedWorkspacePath = `"${this.workspaceRoot}"`;
+
+    return `${quotedEslintPath} ${quotedWorkspacePath} --ext ${extensions} --format json --max-warnings=-1`;
   }
 
   /**

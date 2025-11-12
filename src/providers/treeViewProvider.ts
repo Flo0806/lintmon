@@ -5,7 +5,7 @@ import { DiagnosticsProvider } from './diagnosticsProvider';
 /**
  * Tree data provider for the diagnostics view
  */
-export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<DiagnosticItem> {
+export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<DiagnosticItem>, vscode.Disposable {
   private _onDidChangeTreeData: vscode.EventEmitter<DiagnosticItem | undefined | null> = new vscode.EventEmitter<DiagnosticItem | undefined | null>();
   readonly onDidChangeTreeData: vscode.Event<DiagnosticItem | undefined | null> = this._onDidChangeTreeData.event;
 
@@ -17,7 +17,6 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   private pendingRefresh = false; // Flag: refresh requested during scan
 
   constructor(
-    private context: vscode.ExtensionContext,
     private treeView?: vscode.TreeView<DiagnosticItem>
   ) {
     this.diagnosticsProvider = new DiagnosticsProvider();
@@ -517,5 +516,17 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
     }
 
     return fileGroups;
+  }
+
+  /**
+   * Clean up resources
+   */
+  dispose(): void {
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
+      this.refreshTimeout = undefined;
+    }
+    this.diagnosticsProvider.dispose();
+    this.flatDiagnosticsList = [];
   }
 }

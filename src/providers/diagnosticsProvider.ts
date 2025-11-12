@@ -16,6 +16,7 @@ export class DiagnosticsProvider {
   private configsValidated = false;
   private tsConfigPath?: string;
   private eslintConfigPath?: string;
+  private excludePatternCache?: RegExp[];
 
   /**
    * Get all diagnostics from the workspace
@@ -60,6 +61,9 @@ export class DiagnosticsProvider {
       excludePatterns = [...excludePatterns, ...frameworkExcludes];
     }
 
+    // Pre-compile regex patterns for performance
+    const excludeRegexes = this.compileExcludePatterns(excludePatterns);
+
     const items: DiagnosticItem[] = [];
 
     // Check scan mode setting
@@ -68,13 +72,29 @@ export class DiagnosticsProvider {
 
     if (useFullProjectScan) {
       // Full project scan mode
-      await this.collectFromFullProjectScan(items, showErrors, showWarnings, enableTypeScript, enableESLint, fileTypes, excludePatterns);
+      await this.collectFromFullProjectScan(items, showErrors, showWarnings, enableTypeScript, enableESLint, fileTypes, excludeRegexes);
     } else {
       // Fallback: Use VS Code's diagnostics (only open files)
-      await this.collectFromVSCodeDiagnostics(items, showErrors, showWarnings, enableTypeScript, enableESLint, fileTypes, excludePatterns);
+      await this.collectFromVSCodeDiagnostics(items, showErrors, showWarnings, enableTypeScript, enableESLint, fileTypes, excludeRegexes);
     }
 
     return items;
+  }
+
+  /**
+   * Compile exclude patterns into regex objects for performance
+   */
+  private compileExcludePatterns(patterns: string[]): RegExp[] {
+    return patterns.map(pattern =>
+      new RegExp(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'))
+    );
+  }
+
+  /**
+   * Check if a path matches any exclude pattern
+   */
+  private isPathExcluded(relativePath: string, excludeRegexes: RegExp[]): boolean {
+    return excludeRegexes.some(regex => regex.test(relativePath));
   }
 
   /**
@@ -87,7 +107,7 @@ export class DiagnosticsProvider {
     enableTypeScript: boolean,
     enableESLint: boolean,
     fileTypes: string[],
-    excludePatterns: string[]
+    excludeRegexes: RegExp[]
   ): Promise<void> {
     // Collect TypeScript diagnostics
     if (enableTypeScript && this.tsChecker && this.tsConfigPath) {
@@ -108,11 +128,7 @@ export class DiagnosticsProvider {
 
           // Check exclude patterns
           const relativePath = vscode.workspace.asRelativePath(filePath);
-          const isExcluded = excludePatterns.some(pattern => {
-            const regex = new RegExp(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'));
-            return regex.test(relativePath);
-          });
-          if (isExcluded) {
+          if (this.isPathExcluded(relativePath, excludeRegexes)) {
             continue;
           }
 
@@ -163,11 +179,7 @@ export class DiagnosticsProvider {
 
           // Check exclude patterns
           const relativePath = vscode.workspace.asRelativePath(filePath);
-          const isExcluded = excludePatterns.some(pattern => {
-            const regex = new RegExp(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'));
-            return regex.test(relativePath);
-          });
-          if (isExcluded) {
+          if (this.isPathExcluded(relativePath, excludeRegexes)) {
             continue;
           }
 
@@ -210,7 +222,7 @@ export class DiagnosticsProvider {
     enableTypeScript: boolean,
     enableESLint: boolean,
     fileTypes: string[],
-    excludePatterns: string[]
+    excludeRegexes: RegExp[]
   ): Promise<void> {
     const allDiagnostics = vscode.languages.getDiagnostics();
 
@@ -224,12 +236,7 @@ export class DiagnosticsProvider {
 
       // Check if file matches exclude patterns
       const relativePath = vscode.workspace.asRelativePath(uri);
-      const isExcluded = excludePatterns.some(pattern => {
-        // Simple glob pattern matching
-        const regex = new RegExp(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'));
-        return regex.test(relativePath);
-      });
-      if (isExcluded) {
+      if (this.isPathExcluded(relativePath, excludeRegexes)) {
         continue;
       }
 
@@ -277,5 +284,17 @@ export class DiagnosticsProvider {
     const col = diagnostic.range.start.character + 1;
     const message = diagnostic.message.split('\n')[0]; // First line only
     return `[${line}:${col}] ${message}`;
+  }
+
+  /**
+   * Clean up resources
+   */
+  dispose(): void {
+    this.tsChecker?.dispose();
+    this.tsChecker = undefined;
+    this.eslintChecker = undefined;
+    this.configDetector = undefined;
+    this.frameworkDetector = undefined;
+    this.excludePatternCache = undefined;
   }
 }

@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as ts from 'typescript';
 import * as path from 'path';
-import * as fs from 'fs';
 
 /**
  * TypeScript checker that scans all files in the project
@@ -85,9 +84,9 @@ export class TypeScriptChecker {
   /**
    * Convert TypeScript diagnostic to VS Code diagnostic
    */
-  convertDiagnostic(tsDiag: ts.Diagnostic, sourceFile?: ts.SourceFile): vscode.Diagnostic | undefined {
+  convertDiagnostic(tsDiag: ts.Diagnostic): vscode.Diagnostic | undefined {
     // Check if diagnostic has file and position info
-    const file = tsDiag.file || sourceFile;
+    const file = tsDiag.file;
     if (!file) {
       return undefined;
     }
@@ -143,5 +142,12 @@ export class TypeScriptChecker {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Clean up resources
+   */
+  dispose(): void {
+    this.program = undefined;
   }
 }

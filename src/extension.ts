@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext): void {
   console.log('LintMon extension is now active');
 
   // Create the tree view provider
-  const treeProvider = new DiagnosticsTreeProvider(context);
+  const treeProvider = new DiagnosticsTreeProvider();
 
   // Register the tree view
   const treeView = vscode.window.createTreeView('lintmon.diagnosticsView', {
@@ -56,6 +56,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Add to subscriptions for cleanup
   context.subscriptions.push(
     treeView,
+    treeProvider,
     refreshCommand,
     togglePauseCommand,
     nextDiagnosticCommand,
