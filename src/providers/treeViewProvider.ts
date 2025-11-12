@@ -15,13 +15,41 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   private isRefreshing = false;
   private refreshTimeout?: NodeJS.Timeout;
   private pendingRefresh = false; // Flag: refresh requested during scan
-  private isPaused = false; // Flag: scanning is paused
 
   constructor(
     private context: vscode.ExtensionContext,
     private treeView?: vscode.TreeView<DiagnosticItem>
   ) {
     this.diagnosticsProvider = new DiagnosticsProvider();
+
+    // Load pause state from settings
+    const config = vscode.workspace.getConfiguration('lintmon');
+    const isPaused = config.get<boolean>('isPaused', false);
+    if (isPaused) {
+      this.isPaused = true;
+      // Show paused state immediately
+      setTimeout(() => {
+        if (this.treeView) {
+          this.treeView.message = '$(debug-pause) Scanning paused';
+        }
+      }, 100);
+    }
+  }
+
+  /**
+   * Check if scanning is paused (from settings)
+   */
+  private get isPaused(): boolean {
+    const config = vscode.workspace.getConfiguration('lintmon');
+    return config.get<boolean>('isPaused', false);
+  }
+
+  /**
+   * Set pause state (save to settings)
+   */
+  private set isPaused(value: boolean) {
+    const config = vscode.workspace.getConfiguration('lintmon');
+    config.update('isPaused', value, vscode.ConfigurationTarget.Global);
   }
 
   /**
@@ -83,8 +111,9 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   /**
    * Toggle pause/resume scanning
    */
-  togglePause(): void {
-    this.isPaused = !this.isPaused;
+  async togglePause(): Promise<void> {
+    const wasPaused = this.isPaused;
+    this.isPaused = !wasPaused;
 
     if (this.isPaused) {
       // Paused - show message
@@ -102,18 +131,9 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
         this.treeView.message = undefined;
       }
       vscode.window.showInformationMessage('LintMon: Scanning resumed');
-      this.refreshImmediate();
+      // Force refresh after unpause
+      this._onDidChangeTreeData.fire(undefined);
     }
-
-    // Update command icon
-    vscode.commands.executeCommand('setContext', 'lintmon.isPaused', this.isPaused);
-  }
-
-  /**
-   * Check if scanning is paused
-   */
-  isPausedState(): boolean {
-    return this.isPaused;
   }
 
   /**

@@ -92,9 +92,7 @@ export class DiagnosticsProvider {
     // Collect TypeScript diagnostics
     if (enableTypeScript && this.tsChecker && this.tsConfigPath) {
       try {
-        console.log('LintMon: Starting TypeScript scan...');
         const tsDiagnostics = await this.tsChecker.getAllDiagnostics(this.tsConfigPath);
-        console.log(`LintMon: Found ${tsDiagnostics.size} files with TS diagnostics`);
 
         for (const [filePath, diagnostics] of tsDiagnostics) {
           // Skip global diagnostics for now
@@ -119,12 +117,10 @@ export class DiagnosticsProvider {
           }
 
           const uri = vscode.Uri.file(filePath);
-          console.log(`LintMon: Processing ${diagnostics.length} diagnostics for ${relativePath}`);
 
           for (const tsDiag of diagnostics) {
             const diagnostic = this.tsChecker.convertDiagnostic(tsDiag);
             if (!diagnostic) {
-              console.warn(`LintMon: Failed to convert diagnostic in ${relativePath}`);
               continue;
             }
 
@@ -147,7 +143,6 @@ export class DiagnosticsProvider {
             });
           }
         }
-        console.log(`LintMon: Added ${items.length} TS diagnostics to list`);
       } catch (error) {
         console.error('Error collecting TypeScript diagnostics:', error);
         vscode.window.showErrorMessage('LintMon: Failed to collect TypeScript diagnostics');

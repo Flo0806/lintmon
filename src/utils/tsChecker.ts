@@ -22,8 +22,6 @@ export class TypeScriptChecker {
     const diagnosticsMap = new Map<string, ts.Diagnostic[]>();
 
     try {
-      console.log(`LintMon: Loading tsconfig from ${tsConfigPath}`);
-
       // Load tsconfig.json
       const configFile = ts.readConfigFile(tsConfigPath, ts.sys.readFile);
       if (configFile.error) {
@@ -43,16 +41,11 @@ export class TypeScriptChecker {
         return diagnosticsMap;
       }
 
-      console.log(`LintMon: Found ${parsedConfig.fileNames.length} files in tsconfig`);
-      console.log('LintMon: Sample files:', parsedConfig.fileNames.slice(0, 5));
-
       // Create TypeScript program
       this.program = ts.createProgram({
         rootNames: parsedConfig.fileNames,
         options: parsedConfig.options,
       });
-
-      console.log(`LintMon: Created TS program with ${this.program.getSourceFiles().length} source files`);
 
       // Get diagnostics for all files
       const allDiagnostics = [
@@ -61,17 +54,11 @@ export class TypeScriptChecker {
       ];
 
       // Get diagnostics for each source file
-      let checkedFiles = 0;
-      let skippedFiles = 0;
-
       for (const sourceFile of this.program.getSourceFiles()) {
         // Skip declaration files and node_modules
         if (sourceFile.isDeclarationFile || sourceFile.fileName.includes('node_modules')) {
-          skippedFiles++;
           continue;
         }
-
-        checkedFiles++;
 
         const fileDiagnostics = [
           ...this.program.getSyntacticDiagnostics(sourceFile),
@@ -79,12 +66,9 @@ export class TypeScriptChecker {
         ];
 
         if (fileDiagnostics.length > 0) {
-          console.log(`LintMon: Found ${fileDiagnostics.length} diagnostics in ${sourceFile.fileName}`);
           diagnosticsMap.set(sourceFile.fileName, fileDiagnostics);
         }
       }
-
-      console.log(`LintMon: Checked ${checkedFiles} files, skipped ${skippedFiles} files`);
 
       // Add global diagnostics to a special entry
       if (allDiagnostics.length > 0) {
@@ -105,7 +89,6 @@ export class TypeScriptChecker {
     // Check if diagnostic has file and position info
     const file = tsDiag.file || sourceFile;
     if (!file) {
-      console.warn('TS diagnostic without file:', ts.flattenDiagnosticMessageText(tsDiag.messageText, '\n'));
       return undefined;
     }
 

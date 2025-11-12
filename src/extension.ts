@@ -48,12 +48,9 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  // Watch for file saves if enabled
+  // Watch for file saves - always refresh (unless paused)
   const fileSaveWatcher = vscode.workspace.onDidSaveTextDocument(() => {
-    const config = vscode.workspace.getConfiguration('lintmon');
-    if (config.get<boolean>('refreshOnSave', true)) {
-      treeProvider.refresh();
-    }
+    treeProvider.refresh();
   });
 
   // Add to subscriptions for cleanup

@@ -113,6 +113,11 @@
           "default": true,
           "description": "Show error-level diagnostics"
         },
+        "lintmon.showInformationAndHints": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show information and hint-level diagnostics (can be noisy)"
+        },
         "lintmon.groupBy": {
           "type": "string",
           "enum": ["file", "errorType", "both"],
@@ -162,10 +167,10 @@
           "default": [".ts", ".tsx", ".js", ".jsx", ".vue"],
           "description": "File extensions to check for diagnostics"
         },
-        "lintmon.refreshOnSave": {
+        "lintmon.isPaused": {
           "type": "boolean",
-          "default": true,
-          "description": "Automatically refresh diagnostics when files are saved"
+          "default": false,
+          "description": "Pause LintMon scanning (stops automatic diagnostics collection)"
         },
         "lintmon.scanMode": {
           "type": "string",
