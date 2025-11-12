@@ -1,0 +1,10 @@
+.vscode/**
+.vscode-test/**
+src/**
+.gitignore
+eslint.config.mjs
+tsconfig.json
+CLAUDE.md
+*.vsix
+.nvmrc
+pnpm-lock.yaml

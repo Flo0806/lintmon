@@ -1,0 +1,171 @@
+{
+  "name": "lintmon",
+  "displayName": "LintMon - Project Diagnostics Viewer",
+  "description": "View all TypeScript and ESLint diagnostics across your entire project in a convenient sidebar",
+  "version": "0.0.1",
+  "publisher": "lintmon",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/lintmon"
+  },
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.22.0",
+  "categories": [
+    "Linters",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "typescript",
+    "eslint",
+    "diagnostics",
+    "linter",
+    "vue",
+    "react",
+    "nuxt",
+    "nextjs"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "lintmon-diagnostics",
+          "title": "LintMon",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "lintmon-diagnostics": [
+        {
+          "id": "lintmon.diagnosticsView",
+          "name": "Diagnostics"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "lintmon.refresh",
+        "title": "Refresh Diagnostics",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "lintmon.nextDiagnostic",
+        "title": "Go to Next Diagnostic"
+      },
+      {
+        "command": "lintmon.previousDiagnostic",
+        "title": "Go to Previous Diagnostic"
+      },
+      {
+        "command": "lintmon.quickFix",
+        "title": "Apply Quick Fix",
+        "icon": "$(lightbulb)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "lintmon.nextDiagnostic",
+        "key": "f8",
+        "mac": "f8"
+      },
+      {
+        "command": "lintmon.previousDiagnostic",
+        "key": "shift+f8",
+        "mac": "shift+f8"
+      }
+    ],
+    "configuration": {
+      "title": "LintMon",
+      "properties": {
+        "lintmon.showWarnings": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show warning-level diagnostics in addition to errors"
+        },
+        "lintmon.showErrors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show error-level diagnostics"
+        },
+        "lintmon.groupBy": {
+          "type": "string",
+          "enum": ["file", "errorType", "both"],
+          "default": "both",
+          "description": "How to group diagnostics in the tree view"
+        },
+        "lintmon.excludePatterns": {
+          "type": "array",
+          "default": [
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/.nuxt/**",
+            "**/.next/**",
+            "**/out/**",
+            "**/.output/**"
+          ],
+          "description": "File patterns to exclude from diagnostics (in addition to .gitignore)"
+        },
+        "lintmon.tsConfigPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to tsconfig.json (leave empty for auto-detection)"
+        },
+        "lintmon.eslintConfigPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to ESLint config (leave empty for auto-detection)"
+        },
+        "lintmon.enableTypeScript": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable TypeScript diagnostics"
+        },
+        "lintmon.enableESLint": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable ESLint diagnostics"
+        },
+        "lintmon.enableVueTsc": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable vue-tsc for Vue/Nuxt projects (auto-detected)"
+        },
+        "lintmon.fileTypes": {
+          "type": "array",
+          "default": [".ts", ".tsx", ".js", ".jsx", ".vue"],
+          "description": "File extensions to check for diagnostics"
+        },
+        "lintmon.refreshOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh diagnostics when files are saved"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "pnpm run compile && pnpm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {}
+}
