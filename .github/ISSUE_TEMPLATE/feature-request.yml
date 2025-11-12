@@ -1,0 +1,68 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement for LintMon
+labels: ["enhancement", "pending triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in improving LintMon! We love hearing ideas from the community.
+
+        **Before submitting:**
+        - Check if a similar feature request already exists
+        - Consider if this aligns with LintMon's goal of project-wide diagnostics monitoring
+        - Think about how this would benefit other users
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: What problem does this feature solve?
+      description: |
+        Describe the problem or limitation you're experiencing. What use case would this feature enable?
+      placeholder: |
+        Currently, when I try to...
+        It would be helpful if LintMon could...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear description of what you want to happen. Include UI/UX mockups or examples if relevant.
+      placeholder: |
+        I would like to be able to...
+
+        For example:
+        - Add a button to...
+        - Show diagnostics grouped by...
+        - Filter errors by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      description: Have you found any workarounds? Are there alternative approaches that could solve this?
+      placeholder: |
+        I tried...
+        I also considered...
+
+  - type: checkboxes
+    id: additional-info
+    attributes:
+      label: Additional information
+      options:
+        - label: I'm willing to open a PR to implement this feature
+        - label: This feature would benefit my specific framework (Nuxt/Next.js/Vue/React/etc.)
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have checked existing issues and discussions to make sure this hasn't been proposed before
+          required: true
+        - label: I believe this feature aligns with LintMon's goals as a diagnostics monitoring tool
+          required: true

@@ -1,0 +1,73 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior in LintMon
+labels: ["bug", "pending triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below to help us understand and fix the issue.
+
+        **Before submitting:**
+        - Make sure you're using the latest version of LintMon
+        - Check if a similar issue already exists
+        - Try to provide a minimal reproduction if possible
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is. What did you expect to happen? What actually happened?
+      placeholder: |
+        When I use LintMon with...
+        I expected... but instead...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: |
+        Please provide steps to reproduce the issue. This helps us identify and fix the bug much faster!
+      placeholder: |
+        1. Open a project with TypeScript/ESLint
+        2. Open LintMon sidebar
+        3. Click on...
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Please provide information about your environment.
+      placeholder: |
+        - LintMon version: (check in Extensions)
+        - VS Code version:
+        - Framework: Nuxt / Next.js / Vue / React / Angular / etc.
+        - TypeScript version:
+        - ESLint version:
+        - OS: macOS / Windows / Linux
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs & Error Messages
+      description: |
+        Please paste any relevant console errors or logs.
+        You can find logs in: View → Output → LintMon (if available) or Developer Tools Console.
+      render: shell
+      placeholder: |
+        Paste error logs here...
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Any other context, screenshots, or information that might help us understand the issue.
+      placeholder: Add any additional information here...

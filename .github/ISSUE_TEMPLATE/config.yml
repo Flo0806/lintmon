@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📦 VS Code Marketplace
+    url: https://marketplace.visualstudio.com/items?itemName=FHSoftDev.lintmon
+    about: Install LintMon from the VS Code Marketplace
+  - name: 💡 Discussions
+    url: https://github.com/Flo0806/lintmon/discussions
+    about: Have a question or idea? Start a discussion with the community
+  - name: ⭐ Leave a Review
+    url: https://marketplace.visualstudio.com/items?itemName=FHSoftDev.lintmon&ssr=false#review-details
+    about: If you like LintMon, please leave a review on the marketplace!
