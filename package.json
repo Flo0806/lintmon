@@ -122,7 +122,11 @@
         },
         "lintmon.groupBy": {
           "type": "string",
-          "enum": ["file", "errorType", "both"],
+          "enum": [
+            "file",
+            "errorType",
+            "both"
+          ],
           "default": "both",
           "description": "How to group diagnostics in the tree view"
         },
@@ -166,7 +170,13 @@
         },
         "lintmon.fileTypes": {
           "type": "array",
-          "default": [".ts", ".tsx", ".js", ".jsx", ".vue"],
+          "default": [
+            ".ts",
+            ".tsx",
+            ".js",
+            ".jsx",
+            ".vue"
+          ],
           "description": "File extensions to check for diagnostics"
         },
         "lintmon.isPaused": {
@@ -176,7 +186,10 @@
         },
         "lintmon.scanMode": {
           "type": "string",
-          "enum": ["full", "openFiles"],
+          "enum": [
+            "full",
+            "openFiles"
+          ],
           "default": "full",
           "enumDescriptions": [
             "Scan all files in the project (slower but complete)",
@@ -200,6 +213,7 @@
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/vsce": "^3.7.0",
     "eslint": "^8.56.0",
     "typescript": "^5.3.0"
   },
