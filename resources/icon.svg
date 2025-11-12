@@ -1,15 +1,20 @@
-<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background circle -->
-  <circle cx="64" cy="64" r="60" fill="#3B82F6" />
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+     xmlns="http://www.w3.org/2000/svg">
+  <!-- Lines -->
+  <path d="M9 6h11M9 12h11M9 18h11"
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
 
-  <!-- Checklist icon -->
-  <rect x="35" y="25" width="58" height="78" rx="4" fill="white" />
+  <!-- Error: X -->
+  <path d="M3.8 4.8L6.2 7.2M6.2 4.8L3.8 7.2"
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Check marks -->
-  <path d="M 45 45 L 50 50 L 60 40" stroke="#10B981" stroke-width="4" fill="none" stroke-linecap="round" />
-  <path d="M 45 65 L 50 70 L 60 60" stroke="#10B981" stroke-width="4" fill="none" stroke-linecap="round" />
+  <!-- Warning -->
+  <path d="M5 10.5L3.2 13.5H6.8L5 10.5Z"
+        fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M5 11.6V12.6M5 13.1v0"
+        stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
 
-  <!-- Warning icon -->
-  <circle cx="78" cy="85" r="8" fill="#EF4444" />
-  <text x="78" y="89" text-anchor="middle" font-size="12" font-weight="bold" fill="white">!</text>
+  <!-- OK -->
+  <path d="M3.6 18l1.5 1.6 2.4-2.6"
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

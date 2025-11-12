@@ -1,21 +1,54 @@
 import * as vscode from 'vscode';
 import { DiagnosticItem } from '../types';
+import { ConfigDetector } from '../utils/configDetector';
+import { FrameworkDetector } from '../utils/frameworkDetector';
 
 /**
  * Provider for collecting diagnostics from the workspace
  */
 export class DiagnosticsProvider {
+  private configDetector?: ConfigDetector;
+  private frameworkDetector?: FrameworkDetector;
+  private configsValidated = false;
+
   /**
    * Get all diagnostics from the workspace
    */
   async getDiagnostics(): Promise<DiagnosticItem[]> {
+    // Initialize detectors if workspace is available
+    if (!this.configDetector && vscode.workspace.workspaceFolders) {
+      const workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
+      this.configDetector = new ConfigDetector(workspaceRoot);
+      this.frameworkDetector = new FrameworkDetector(workspaceRoot);
+
+      // Validate configs once on first run
+      if (!this.configsValidated) {
+        await this.configDetector.validateConfigs();
+        this.configsValidated = true;
+
+        // Log detected framework
+        if (this.frameworkDetector) {
+          const framework = await this.frameworkDetector.detectFramework();
+          if (framework) {
+            console.log(`LintMon: Detected framework: ${framework.name}`);
+          }
+        }
+      }
+    }
+
     const config = vscode.workspace.getConfiguration('lintmon');
     const showErrors = config.get<boolean>('showErrors', true);
     const showWarnings = config.get<boolean>('showWarnings', true);
     const enableTypeScript = config.get<boolean>('enableTypeScript', true);
     const enableESLint = config.get<boolean>('enableESLint', true);
     const fileTypes = config.get<string[]>('fileTypes', ['.ts', '.tsx', '.js', '.jsx', '.vue']);
-    const excludePatterns = config.get<string[]>('excludePatterns', []);
+    let excludePatterns = config.get<string[]>('excludePatterns', []);
+
+    // Add framework-specific exclude patterns
+    if (this.frameworkDetector) {
+      const frameworkExcludes = await this.frameworkDetector.getFrameworkExcludePatterns();
+      excludePatterns = [...excludePatterns, ...frameworkExcludes];
+    }
 
     const items: DiagnosticItem[] = [];
 

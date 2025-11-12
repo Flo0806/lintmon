@@ -13,8 +13,18 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   private currentIndex = 0;
   private flatDiagnosticsList: DiagnosticItem[] = [];
 
-  constructor(private context: vscode.ExtensionContext) {
+  constructor(
+    private context: vscode.ExtensionContext,
+    private treeView?: vscode.TreeView<DiagnosticItem>
+  ) {
     this.diagnosticsProvider = new DiagnosticsProvider();
+  }
+
+  /**
+   * Set the tree view reference (needed for badge updates)
+   */
+  setTreeView(treeView: vscode.TreeView<DiagnosticItem>): void {
+    this.treeView = treeView;
   }
 
   /**
@@ -22,6 +32,29 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
    */
   refresh(): void {
     this._onDidChangeTreeData.fire(undefined);
+    this.updateBadge();
+  }
+
+  /**
+   * Update the badge count in the Activity Bar
+   */
+  private updateBadge(): void {
+    if (!this.treeView) {
+      return;
+    }
+
+    const errorCount = this.flatDiagnosticsList.filter(
+      item => item.severity === vscode.DiagnosticSeverity.Error
+    ).length;
+
+    if (errorCount > 0) {
+      this.treeView.badge = {
+        tooltip: `${errorCount} error${errorCount !== 1 ? 's' : ''}`,
+        value: errorCount,
+      };
+    } else {
+      this.treeView.badge = undefined;
+    }
   }
 
   /**

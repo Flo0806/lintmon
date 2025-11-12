@@ -17,6 +17,9 @@ export function activate(context: vscode.ExtensionContext): void {
     showCollapseAll: true,
   });
 
+  // Set tree view reference for badge updates
+  treeProvider.setTreeView(treeView);
+
   // Register commands
   const refreshCommand = vscode.commands.registerCommand('lintmon.refresh', () => {
     treeProvider.refresh();
