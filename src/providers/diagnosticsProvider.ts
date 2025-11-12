@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { DiagnosticItem } from '../types';
 import { ConfigDetector } from '../utils/configDetector';
 import { FrameworkDetector } from '../utils/frameworkDetector';
+import { TypeScriptChecker } from '../utils/tsChecker';
+import { ESLintChecker } from '../utils/eslintChecker';
 
 /**
  * Provider for collecting diagnostics from the workspace
@@ -9,7 +11,11 @@ import { FrameworkDetector } from '../utils/frameworkDetector';
 export class DiagnosticsProvider {
   private configDetector?: ConfigDetector;
   private frameworkDetector?: FrameworkDetector;
+  private tsChecker?: TypeScriptChecker;
+  private eslintChecker?: ESLintChecker;
   private configsValidated = false;
+  private tsConfigPath?: string;
+  private eslintConfigPath?: string;
 
   /**
    * Get all diagnostics from the workspace
@@ -20,10 +26,14 @@ export class DiagnosticsProvider {
       const workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
       this.configDetector = new ConfigDetector(workspaceRoot);
       this.frameworkDetector = new FrameworkDetector(workspaceRoot);
+      this.tsChecker = new TypeScriptChecker(workspaceRoot);
+      this.eslintChecker = new ESLintChecker(workspaceRoot);
 
       // Validate configs once on first run
       if (!this.configsValidated) {
-        await this.configDetector.validateConfigs();
+        const configs = await this.configDetector.validateConfigs();
+        this.tsConfigPath = configs.tsConfig;
+        this.eslintConfigPath = configs.eslintConfig;
         this.configsValidated = true;
 
         // Log detected framework
@@ -52,7 +62,156 @@ export class DiagnosticsProvider {
 
     const items: DiagnosticItem[] = [];
 
-    // Get all diagnostics from VS Code
+    // Check scan mode setting
+    const scanMode = config.get<string>('scanMode', 'full');
+    const useFullProjectScan = scanMode === 'full';
+
+    if (useFullProjectScan) {
+      // Full project scan mode
+      await this.collectFromFullProjectScan(items, showErrors, showWarnings, enableTypeScript, enableESLint, fileTypes, excludePatterns);
+    } else {
+      // Fallback: Use VS Code's diagnostics (only open files)
+      await this.collectFromVSCodeDiagnostics(items, showErrors, showWarnings, enableTypeScript, enableESLint, fileTypes, excludePatterns);
+    }
+
+    return items;
+  }
+
+  /**
+   * Collect diagnostics using full project scan (TypeScript + ESLint CLI)
+   */
+  private async collectFromFullProjectScan(
+    items: DiagnosticItem[],
+    showErrors: boolean,
+    showWarnings: boolean,
+    enableTypeScript: boolean,
+    enableESLint: boolean,
+    fileTypes: string[],
+    excludePatterns: string[]
+  ): Promise<void> {
+    // Collect TypeScript diagnostics
+    if (enableTypeScript && this.tsChecker && this.tsConfigPath) {
+      try {
+        const tsDiagnostics = await this.tsChecker.getAllDiagnostics(this.tsConfigPath);
+
+        for (const [filePath, diagnostics] of tsDiagnostics) {
+          // Skip global diagnostics for now
+          if (filePath === '__global__') {
+            continue;
+          }
+
+          // Check file type
+          const hasMatchingExtension = fileTypes.some(ext => filePath.endsWith(ext));
+          if (!hasMatchingExtension) {
+            continue;
+          }
+
+          // Check exclude patterns
+          const relativePath = vscode.workspace.asRelativePath(filePath);
+          const isExcluded = excludePatterns.some(pattern => {
+            const regex = new RegExp(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'));
+            return regex.test(relativePath);
+          });
+          if (isExcluded) {
+            continue;
+          }
+
+          const uri = vscode.Uri.file(filePath);
+
+          for (const tsDiag of diagnostics) {
+            const diagnostic = this.tsChecker.convertDiagnostic(tsDiag);
+            if (!diagnostic) {
+              continue;
+            }
+
+            // Filter by severity
+            if (diagnostic.severity === vscode.DiagnosticSeverity.Error && !showErrors) {
+              continue;
+            }
+            if (diagnostic.severity === vscode.DiagnosticSeverity.Warning && !showWarnings) {
+              continue;
+            }
+
+            items.push({
+              type: 'diagnostic',
+              label: this.getDiagnosticLabel(diagnostic),
+              diagnostic,
+              uri,
+              severity: diagnostic.severity,
+              source: diagnostic.source,
+              code: diagnostic.code as string | number | undefined,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error collecting TypeScript diagnostics:', error);
+        vscode.window.showErrorMessage('LintMon: Failed to collect TypeScript diagnostics');
+      }
+    }
+
+    // Collect ESLint diagnostics
+    if (enableESLint && this.eslintChecker) {
+      try {
+        const eslintDiagnostics = await this.eslintChecker.getAllDiagnostics();
+
+        for (const [filePath, diagnostics] of eslintDiagnostics) {
+          // Check file type
+          const hasMatchingExtension = fileTypes.some(ext => filePath.endsWith(ext));
+          if (!hasMatchingExtension) {
+            continue;
+          }
+
+          // Check exclude patterns
+          const relativePath = vscode.workspace.asRelativePath(filePath);
+          const isExcluded = excludePatterns.some(pattern => {
+            const regex = new RegExp(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'));
+            return regex.test(relativePath);
+          });
+          if (isExcluded) {
+            continue;
+          }
+
+          const uri = vscode.Uri.file(filePath);
+
+          for (const diagnostic of diagnostics) {
+            // Filter by severity
+            if (diagnostic.severity === vscode.DiagnosticSeverity.Error && !showErrors) {
+              continue;
+            }
+            if (diagnostic.severity === vscode.DiagnosticSeverity.Warning && !showWarnings) {
+              continue;
+            }
+
+            items.push({
+              type: 'diagnostic',
+              label: this.getDiagnosticLabel(diagnostic),
+              diagnostic,
+              uri,
+              severity: diagnostic.severity,
+              source: diagnostic.source,
+              code: diagnostic.code as string | number | undefined,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error collecting ESLint diagnostics:', error);
+        vscode.window.showErrorMessage('LintMon: Failed to collect ESLint diagnostics');
+      }
+    }
+  }
+
+  /**
+   * Collect diagnostics from VS Code's built-in diagnostics (fallback mode)
+   */
+  private async collectFromVSCodeDiagnostics(
+    items: DiagnosticItem[],
+    showErrors: boolean,
+    showWarnings: boolean,
+    enableTypeScript: boolean,
+    enableESLint: boolean,
+    fileTypes: string[],
+    excludePatterns: string[]
+  ): Promise<void> {
     const allDiagnostics = vscode.languages.getDiagnostics();
 
     for (const [uri, diagnostics] of allDiagnostics) {
@@ -108,8 +267,6 @@ export class DiagnosticsProvider {
         });
       }
     }
-
-    return items;
   }
 
   /**

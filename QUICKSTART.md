@@ -57,10 +57,16 @@ To test LintMon with a real project:
 ### Features to Test
 
 #### Basic Features
+- ✅ **Full Project Scanning** - Shows ALL files, not just open ones!
 - ✅ View all diagnostics in sidebar
 - ✅ Click diagnostic → jumps to file/line
 - ✅ Badge counter shows error count
 - ✅ Refresh button updates diagnostics
+
+#### Scan Modes
+Open Settings → Extensions → LintMon → Scan Mode:
+- **full** (default) - Scans ALL files in project using TypeScript & ESLint CLI
+- **openFiles** - Only shows diagnostics from open files (faster, fallback mode)
 
 #### Keyboard Shortcuts
 - `F8` - Next diagnostic

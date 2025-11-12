@@ -22,7 +22,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register commands
   const refreshCommand = vscode.commands.registerCommand('lintmon.refresh', () => {
-    treeProvider.refresh();
+    treeProvider.refreshImmediate(); // Manual refresh = immediate, no debounce
   });
 
   const nextDiagnosticCommand = vscode.commands.registerCommand('lintmon.nextDiagnostic', () => {

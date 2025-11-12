@@ -12,6 +12,9 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   private diagnosticsProvider: DiagnosticsProvider;
   private currentIndex = 0;
   private flatDiagnosticsList: DiagnosticItem[] = [];
+  private isRefreshing = false;
+  private refreshTimeout?: NodeJS.Timeout;
+  private pendingRefresh = false; // Flag: refresh requested during scan
 
   constructor(
     private context: vscode.ExtensionContext,
@@ -28,11 +31,40 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   }
 
   /**
-   * Refresh the tree view
+   * Refresh the tree view (debounced)
    */
   refresh(): void {
+    // If already refreshing, mark as pending and return
+    if (this.isRefreshing) {
+      this.pendingRefresh = true;
+      return;
+    }
+
+    // Debounce: If called multiple times quickly, only refresh once
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
+    }
+
+    this.refreshTimeout = setTimeout(() => {
+      this._onDidChangeTreeData.fire(undefined);
+    }, 500); // 500ms debounce
+  }
+
+  /**
+   * Force immediate refresh (for manual refresh button)
+   */
+  refreshImmediate(): void {
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
+    }
+
+    // If already refreshing, mark as pending
+    if (this.isRefreshing) {
+      this.pendingRefresh = true;
+      return;
+    }
+
     this._onDidChangeTreeData.fire(undefined);
-    this.updateBadge();
   }
 
   /**
@@ -109,15 +141,21 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
 
     // Add description with additional info
     if (element.type === 'diagnostic') {
-      const parts: string[] = [];
-      if (element.source) {
-        parts.push(element.source);
-      }
+      // For ESLint, just show the rule name (not "eslint: rule")
+      // For TypeScript, show "ts [code]"
       if (element.code) {
-        parts.push(`[${element.code}]`);
-      }
-      if (parts.length > 0) {
-        treeItem.description = parts.join(' ');
+        const source = element.source?.toLowerCase() || '';
+        if (source.includes('eslint')) {
+          // ESLint: Just show the rule name
+          treeItem.description = String(element.code);
+        } else {
+          // TypeScript/others: Show source + code
+          treeItem.description = element.source
+            ? `${element.source} [${element.code}]`
+            : `[${element.code}]`;
+        }
+      } else if (element.source) {
+        treeItem.description = element.source;
       }
     }
 
@@ -146,13 +184,46 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
     const config = vscode.workspace.getConfiguration('lintmon');
     const groupMode = config.get<GroupMode>('groupBy', 'both');
 
-    const diagnosticItems = await this.diagnosticsProvider.getDiagnostics();
+    // Show loading state
+    this.isRefreshing = true;
+    if (this.treeView) {
+      this.treeView.message = '$(sync~spin) Scanning project...';
+    }
 
-    // Update flat list for navigation
-    this.flatDiagnosticsList = this.flattenDiagnostics(diagnosticItems);
+    try {
+      const diagnosticItems = await this.diagnosticsProvider.getDiagnostics();
 
-    // Group diagnostics based on mode
-    return this.groupDiagnostics(diagnosticItems, groupMode);
+      // Update flat list for navigation
+      this.flatDiagnosticsList = this.flattenDiagnostics(diagnosticItems);
+
+      // Update badge after we have the flat list
+      this.updateBadge();
+
+      // Clear loading state
+      if (this.treeView) {
+        this.treeView.message = undefined;
+      }
+
+      // Group diagnostics based on mode
+      return this.groupDiagnostics(diagnosticItems, groupMode);
+    } catch (error) {
+      console.error('Error getting diagnostics:', error);
+      if (this.treeView) {
+        this.treeView.message = '$(error) Failed to scan project';
+      }
+      return [];
+    } finally {
+      this.isRefreshing = false;
+
+      // If a refresh was requested during the scan, trigger it now
+      if (this.pendingRefresh) {
+        this.pendingRefresh = false;
+        // Schedule refresh after a short delay to avoid immediate re-scan
+        setTimeout(() => {
+          this._onDidChangeTreeData.fire(undefined);
+        }, 100);
+      }
+    }
   }
 
   /**

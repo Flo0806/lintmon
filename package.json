@@ -147,6 +147,16 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically refresh diagnostics when files are saved"
+        },
+        "lintmon.scanMode": {
+          "type": "string",
+          "enum": ["full", "openFiles"],
+          "default": "full",
+          "enumDescriptions": [
+            "Scan all files in the project (slower but complete)",
+            "Only show diagnostics from open files (faster, uses VS Code's built-in diagnostics)"
+          ],
+          "description": "How to collect diagnostics"
         }
       }
     }
@@ -167,5 +177,7 @@
     "eslint": "^8.56.0",
     "typescript": "^5.3.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "typescript": "^5.3.0"
+  }
 }
