@@ -4,9 +4,11 @@
   "description": "View all TypeScript and ESLint diagnostics across your entire project in a convenient sidebar",
   "version": "0.0.1",
   "publisher": "lintmon",
+  "icon": "resources/lm-logo.png",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/lintmon"
+    "url": "https://github.com/Flo0806/lintmon"
   },
   "engines": {
     "vscode": "^1.85.0",
