@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { minimatch } from 'minimatch';
 import { DiagnosticItem } from '../types';
 import { ConfigDetector } from '../utils/configDetector';
 import { FrameworkDetector } from '../utils/frameworkDetector';
@@ -82,19 +83,20 @@ export class DiagnosticsProvider {
   }
 
   /**
-   * Compile exclude patterns into regex objects for performance
+   * Compile exclude patterns - just return them as-is since we use minimatch
    */
-  private compileExcludePatterns(patterns: string[]): RegExp[] {
-    return patterns.map(pattern =>
-      new RegExp(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'))
-    );
+  private compileExcludePatterns(patterns: string[]): string[] {
+    return patterns;
   }
 
   /**
-   * Check if a path matches any exclude pattern
+   * Check if a path matches any exclude pattern using minimatch
    */
-  private isPathExcluded(relativePath: string, excludeRegexes: RegExp[]): boolean {
-    return excludeRegexes.some(regex => regex.test(relativePath));
+  private isPathExcluded(relativePath: string, patterns: string[]): boolean {
+    // Normalize path separators for consistent matching
+    const normalizedPath = relativePath.replace(/\\/g, '/');
+
+    return patterns.some(pattern => minimatch(normalizedPath, pattern));
   }
 
   /**
@@ -107,7 +109,7 @@ export class DiagnosticsProvider {
     enableTypeScript: boolean,
     enableESLint: boolean,
     fileTypes: string[],
-    excludeRegexes: RegExp[]
+    excludePatterns: string[]
   ): Promise<void> {
     // Collect TypeScript diagnostics
     if (enableTypeScript && this.tsChecker && this.tsConfigPath) {
@@ -128,7 +130,7 @@ export class DiagnosticsProvider {
 
           // Check exclude patterns
           const relativePath = vscode.workspace.asRelativePath(filePath);
-          if (this.isPathExcluded(relativePath, excludeRegexes)) {
+          if (this.isPathExcluded(relativePath, excludePatterns)) {
             continue;
           }
 
@@ -179,7 +181,7 @@ export class DiagnosticsProvider {
 
           // Check exclude patterns
           const relativePath = vscode.workspace.asRelativePath(filePath);
-          if (this.isPathExcluded(relativePath, excludeRegexes)) {
+          if (this.isPathExcluded(relativePath, excludePatterns)) {
             continue;
           }
 
@@ -222,7 +224,7 @@ export class DiagnosticsProvider {
     enableTypeScript: boolean,
     enableESLint: boolean,
     fileTypes: string[],
-    excludeRegexes: RegExp[]
+    excludePatterns: string[]
   ): Promise<void> {
     const allDiagnostics = vscode.languages.getDiagnostics();
 
@@ -236,7 +238,7 @@ export class DiagnosticsProvider {
 
       // Check if file matches exclude patterns
       const relativePath = vscode.workspace.asRelativePath(uri);
-      if (this.isPathExcluded(relativePath, excludeRegexes)) {
+      if (this.isPathExcluded(relativePath, excludePatterns)) {
         continue;
       }
 
