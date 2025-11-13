@@ -16,9 +16,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
   private refreshTimeout?: ReturnType<typeof setTimeout>;
   private pendingRefresh = false; // Flag: refresh requested during scan
 
-  constructor(
-    private treeView?: vscode.TreeView<DiagnosticItem>
-  ) {
+  constructor(private treeView?: vscode.TreeView<DiagnosticItem>) {
     this.diagnosticsProvider = new DiagnosticsProvider();
 
     // Load pause state from settings
@@ -143,9 +141,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
       return;
     }
 
-    const errorCount = this.flatDiagnosticsList.filter(
-      item => item.severity === vscode.DiagnosticSeverity.Error
-    ).length;
+    const errorCount = this.flatDiagnosticsList.filter((item) => item.severity === vscode.DiagnosticSeverity.Error).length;
 
     if (errorCount > 0) {
       this.treeView.badge = {
@@ -203,12 +199,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
    * Get tree item for display
    */
   getTreeItem(element: DiagnosticItem): vscode.TreeItem {
-    const treeItem = new vscode.TreeItem(
-      element.label,
-      element.children && element.children.length > 0
-        ? vscode.TreeItemCollapsibleState.Collapsed
-        : vscode.TreeItemCollapsibleState.None
-    );
+    const treeItem = new vscode.TreeItem(element.label, element.children && element.children.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
 
     // Set icon based on severity
     if (element.severity !== undefined) {
@@ -240,10 +231,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
         arguments: [
           element.uri,
           {
-            selection: new vscode.Range(
-              element.diagnostic.range.start,
-              element.diagnostic.range.end
-            ),
+            selection: new vscode.Range(element.diagnostic.range.start, element.diagnostic.range.end),
           },
         ],
       };
@@ -260,9 +248,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
           treeItem.description = String(element.code);
         } else {
           // TypeScript/others: Show source + code
-          treeItem.description = element.source
-            ? `${element.source} [${element.code}]`
-            : `[${element.code}]`;
+          treeItem.description = element.source ? `${element.source} [${element.code}]` : `[${element.code}]`;
         }
       } else if (element.source) {
         treeItem.description = element.source;
@@ -303,7 +289,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
     this.isRefreshing = true;
     this.showScanningBadge(); // Show scanning badge
     if (this.treeView) {
-      this.treeView.message = '$(sync~spin) Scanning project...';
+      this.treeView.message = 'Scanning project...';
     }
 
     try {
@@ -325,7 +311,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
     } catch (error) {
       console.error('Error getting diagnostics:', error);
       if (this.treeView) {
-        this.treeView.message = '$(error) Failed to scan project';
+        this.treeView.message = 'Failed to scan project';
       }
       return [];
     } finally {
@@ -377,11 +363,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
     }
 
     // Get code actions for this diagnostic
-    const codeActions = await vscode.commands.executeCommand<vscode.CodeAction[]>(
-      'vscode.executeCodeActionProvider',
-      item.uri,
-      item.diagnostic.range
-    );
+    const codeActions = await vscode.commands.executeCommand<vscode.CodeAction[]>('vscode.executeCodeActionProvider', item.uri, item.diagnostic.range);
 
     if (!codeActions || codeActions.length === 0) {
       vscode.window.showInformationMessage('No quick fixes available for this diagnostic');
@@ -394,7 +376,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
       await vscode.workspace.applyEdit(action.edit);
       vscode.window.showInformationMessage('Quick fix applied');
     } else if (action.command) {
-      await vscode.commands.executeCommand(action.command.command, ...action.command.arguments || []);
+      await vscode.commands.executeCommand(action.command.command, ...(action.command.arguments || []));
     }
   }
 
@@ -407,10 +389,7 @@ export class DiagnosticsTreeProvider implements vscode.TreeDataProvider<Diagnost
     }
 
     vscode.window.showTextDocument(item.uri, {
-      selection: new vscode.Range(
-        item.diagnostic.range.start,
-        item.diagnostic.range.end
-      ),
+      selection: new vscode.Range(item.diagnostic.range.start, item.diagnostic.range.end),
     });
   }
 

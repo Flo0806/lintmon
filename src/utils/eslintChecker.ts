@@ -50,8 +50,11 @@ export class ESLintChecker {
         return diagnosticsMap;
       }
 
+      // Detect if using flat config
+      const hasFlatConfig = await this.hasFlatConfig();
+
       // Run ESLint with JSON output
-      const eslintCmd = this.getESLintCommand();
+      const eslintCmd = await this.getESLintCommand(hasFlatConfig);
       const { stdout } = await exec(eslintCmd, {
         cwd: this.workspaceRoot,
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large outputs
@@ -146,13 +149,11 @@ export class ESLintChecker {
 
   /**
    * Get the ESLint command to run
+   * Supports both legacy (.eslintrc) and flat config (eslint.config.js)
    */
-  private getESLintCommand(): string {
+  private async getESLintCommand(hasFlatConfig: boolean): Promise<string> {
     const config = vscode.workspace.getConfiguration('lintmon');
     const fileTypes = config.get<string[]>('fileTypes', ['.ts', '.tsx', '.js', '.jsx', '.vue']);
-
-    // Build file extensions for ESLint
-    const extensions = fileTypes.map(ext => ext.replace('.', '')).join(',');
 
     // Use local ESLint from node_modules
     const eslintPath = path.join(this.workspaceRoot, 'node_modules', '.bin', 'eslint');
@@ -161,7 +162,35 @@ export class ESLintChecker {
     const quotedEslintPath = `"${eslintPath}"`;
     const quotedWorkspacePath = `"${this.workspaceRoot}"`;
 
-    return `${quotedEslintPath} ${quotedWorkspacePath} --ext ${extensions} --format json --max-warnings=-1`;
+    if (hasFlatConfig) {
+      // ESLint 9+ with flat config: Don't use --ext, just scan directory
+      // Flat config determines which files to lint via its config
+      return `${quotedEslintPath} ${quotedWorkspacePath} --format json --max-warnings=-1`;
+    } else {
+      // Legacy config: Use --ext flag
+      const extensions = fileTypes.map(ext => ext.replace('.', '')).join(',');
+      return `${quotedEslintPath} ${quotedWorkspacePath} --ext ${extensions} --format json --max-warnings=-1`;
+    }
+  }
+
+  /**
+   * Check if project uses ESLint flat config (eslint.config.js/mjs/cjs)
+   */
+  private async hasFlatConfig(): Promise<boolean> {
+    const fs = require('fs').promises;
+    const flatConfigNames = ['eslint.config.js', 'eslint.config.mjs', 'eslint.config.cjs'];
+
+    for (const configName of flatConfigNames) {
+      try {
+        const configPath = path.join(this.workspaceRoot, configName);
+        await fs.access(configPath);
+        return true;
+      } catch {
+        // File doesn't exist, continue checking
+      }
+    }
+
+    return false;
   }
 
   /**
