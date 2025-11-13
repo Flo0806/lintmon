@@ -1,5 +1,7 @@
 # LintMon - Project Diagnostics Viewer
 
+> **⚠️ Alpha Version**: This extension is in active development. Bugs and breaking changes may occur. Contributions, feedback, and bug reports are highly welcome!
+
 A VS Code extension that displays all TypeScript and ESLint diagnostics across your entire project in a convenient sidebar view.
 
 ![LintMon in Action](https://raw.githubusercontent.com/Flo0806/lintmon/main/resources/sample.png)
@@ -58,6 +60,14 @@ See VS Code Settings (Preferences > Settings > Extensions > LintMon) for all ava
 
 - VS Code 1.85.0 or higher
 - TypeScript and/or ESLint configured in your project
+
+## Contributing
+
+LintMon is in alpha and we welcome contributions! Feel free to:
+- Report bugs and issues on [GitHub](https://github.com/Flo0806/lintmon/issues)
+- Submit feature requests
+- Contribute code via pull requests
+- Share feedback and suggestions
 
 ## License
 
